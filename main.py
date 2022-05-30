@@ -1,7 +1,8 @@
-import Utilities
+from Utilities import *
+from Graph import *
+
 
 def construct_I_graph(all_overlaps_graph, str_len, real_edge_len, window_size):
-
     """
     :param all_overlaps_graph:
     :param str_len:
@@ -13,7 +14,6 @@ def construct_I_graph(all_overlaps_graph, str_len, real_edge_len, window_size):
 
 
 def construct_final_directed_graph(graph_I, all_overlaps_graph, real_edge_len, window_size):
-
     """
     :param graph_I:
     :param all_overlaps_graph:
@@ -55,28 +55,31 @@ def main():
     """
     this part is generating the input for test  
     """
-    str_len = 1000
-    window_size = 50
+    str_len = 100000
+    window_size = 70
     real_edge_len = 20
     num_of_reads = 1000
-    original_str = Utilities.generate_string(str_len)
+    original_str = generate_string(str_len)
+    print(original_str)
     reads_list = read_random_input(original_str, str_len, window_size, num_of_reads)
 
     """
     this part is the actual algorithm  
     """
-    all_overlaps_graph = all_suffix_prefix_matches(reads_list, num_of_reads) # build G*
-    guess = reconstruct_string(all_overlaps_graph, str_len, real_edge_len, window_size)
+    g_star = AllOverlapsGraph(reads_list)
+    g_star.print_graph()
+    # all_overlaps_graph = all_suffix_prefix_matches(reads_list, num_of_reads) # build G*
+    # guess = reconstruct_string(g_star, str_len, real_edge_len, window_size)
 
     """
     this part is printing the results
     """
 
-    if guess == original_str:
-        print("Great success!")
+    # if guess == original_str:
+    #     print("Great success!")
 
-    else:
-        print("Failed to guess string")
+    # else:
+    #     print("Failed to guess string")
 
 
 if __name__ == '__main__':
