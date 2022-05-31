@@ -13,6 +13,26 @@ class Graph:
         self.num_of_vertices = 0
         self.dict_graph = {}
 
+    def get_max_edge(self, vertex):
+        if len(self.dict_graph[vertex]) == 0:
+            return None
+
+        max_weight = 0
+        edge_to_return = self.dict_graph[vertex][0]
+        for edge in self.dict_graph[vertex]:
+            if max_weight < edge.weight:
+                edge_to_return = edge
+                max_weight = edge.weight
+        return edge_to_return
+
+    def is_unique_and_real(self, vertex, max_edge, real_read_len):
+        if max_edge is None:
+            return False
+        for edge in self.dict_graph[vertex]:
+            if edge is not max_edge and edge.next_vertex == max_edge.next_vertex:
+                return False
+        return max_edge.weight >= real_read_len
+
     def print_graph(self):
         for key, edges_lst in self.dict_graph.items():
             print(f"vertex: {key}")
@@ -61,7 +81,8 @@ class AllOverlapsGraph(Graph):
                 overlap_lst.append(new_suffix_edge)
             new_prefix_edge = self.get_overlap(key, new_vertex)
 
-            if new_prefix_edge:
+            if new_prefix_edge:  #
+
                 self.dict_graph[key].append(new_prefix_edge)
 
         self.dict_graph[new_vertex] = overlap_lst

@@ -34,8 +34,10 @@ def reconstruct_string(all_overlaps_graph, str_len, real_edge_len, window_size):
     :return: the guess for the reconstructed string
     """
     # the first part - get the graph with SCC of real edges, and connect them with possibly fake edges
-    graph_I = construct_I_graph(all_overlaps_graph, str_len, real_edge_len, window_size)
-    graph_final_directed = construct_final_directed_graph(graph_I, all_overlaps_graph, real_edge_len, window_size)
+    induced_graph = InducedGraph(all_overlaps_graph, real_edge_len)
+    print("graph I\n")
+    induced_graph.print_graph()
+    # graph_final_directed = construct_final_directed_graph(graph_I, all_overlaps_graph, real_edge_len, window_size)
 
     # part two - TODO write what happens here
 
@@ -55,10 +57,10 @@ def main():
     """
     this part is generating the input for test  
     """
-    str_len = 100000
-    window_size = 70
-    real_edge_len = 20
-    num_of_reads = 1000
+    str_len = 15
+    window_size = 7
+    real_edge_len = 4
+    num_of_reads = 7
     original_str = generate_string(str_len)
     print(original_str)
     reads_list = read_random_input(original_str, str_len, window_size, num_of_reads)
@@ -69,7 +71,7 @@ def main():
     g_star = AllOverlapsGraph(reads_list)
     g_star.print_graph()
     # all_overlaps_graph = all_suffix_prefix_matches(reads_list, num_of_reads) # build G*
-    # guess = reconstruct_string(g_star, str_len, real_edge_len, window_size)
+    guess = reconstruct_string(g_star, str_len, real_edge_len, window_size)
 
     """
     this part is printing the results
