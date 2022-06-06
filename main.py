@@ -62,13 +62,14 @@ def main():
     real_edge_len = 4
     num_of_reads = 7
     original_str = generate_string(str_len)
-    print(original_str)
+    print(original_str + "\n")
     reads_list = read_random_input(original_str, str_len, window_size, num_of_reads)
 
     """
     this part is the actual algorithm  
     """
     g_star = AllOverlapsGraph(reads_list)
+    print("G star:\n")
     g_star.print_graph()
     # all_overlaps_graph = all_suffix_prefix_matches(reads_list, num_of_reads) # build G*
     guess = reconstruct_string(g_star, str_len, real_edge_len, window_size)

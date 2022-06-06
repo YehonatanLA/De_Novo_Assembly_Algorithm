@@ -2,10 +2,10 @@ class Edge:
     def __init__(self, weight, overlap, next_vertex):
         self.weight = weight
         self.overlap = overlap
-        self.vertex = next_vertex
+        self.next_vertex = next_vertex
 
     def print_edge(self):
-        print(f"next vertex: {self.vertex}, weight of edge: {self.weight}, overlap of edge: {self.overlap}")
+        print(f"next vertex: {self.next_vertex}, weight of edge: {self.weight}, overlap of edge: {self.overlap}")
 
 
 class Graph:
@@ -38,7 +38,6 @@ class Graph:
             print(f"vertex: {key}")
             for data in edges_lst:
                 data.print_edge()
-
             print("\n")
 
     def get_overlap(self, suffix_vertex, prefix_vertex):
@@ -59,6 +58,7 @@ class Graph:
         return None
 
 
+# graph G star
 class AllOverlapsGraph(Graph):
 
     def __init__(self, reads_lst):
@@ -90,3 +90,40 @@ class AllOverlapsGraph(Graph):
     def add_vertices(self):
         for vertex in self.reads_lst:
             self.add_vertex(vertex)
+
+
+# graph I
+class InducedGraph(Graph):
+    def __init__(self, all_overlap_graph, real_read_len):
+        Graph.__init__(self)
+
+        # TODO: write the algorithm with linear complexity, based on the way to build AllOverlapsGraph
+
+        for vertex, list_of_edges in all_overlap_graph.dict_graph.items():
+            max_edge = all_overlap_graph.get_max_edge(vertex)
+
+            if all_overlap_graph.is_unique_and_real(vertex, max_edge, real_read_len):
+                self.dict_graph[vertex] = [max_edge]
+
+
+
+# G star star
+class FinalDirectedGraph(Graph):
+    def __init__(self, induced_graph):
+        Graph.__init__(self)
+        self.roots = {}
+
+        for vertex in induced_graph.dict_graph.keys():
+            self.roots[vertex] = True
+
+        for vertex, list_of_edges in induced_graph.dict_graph.items():
+            for edge in list_of_edges:
+                self.roots[edge.next_vertex] = False
+
+        # check it later
+        roots = {vertex: status for vertex, status in self.roots.items() if status}
+
+        for root in roots:
+            new_vertex = root
+            # TODO: finish
+
