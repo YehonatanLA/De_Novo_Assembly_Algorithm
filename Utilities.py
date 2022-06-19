@@ -1,9 +1,10 @@
 import random
+import time
 
 
 def generate_string(str_len):
     letters = ['A', 'C', 'G', 'T']
-    return ''.join(random.choice(letters) for i in range(str_len))
+    return ''.join(random.choice(letters) for _ in range(str_len))
 
 
 def read_random_input(original_str, str_len, window_size, num_of_reads):
@@ -18,3 +19,13 @@ def read_random_input(original_str, str_len, window_size, num_of_reads):
             index += 1
     return lst_of_all_reads
 
+
+def get_current_time(current_time):
+    print(f"time: {time.time() - current_time}")
+
+
+def print_start_msg(original_str):
+    print("----------------------------------------------------")
+    print("De Novo Assembly Algorithm\n")
+    print("Original Strand: ")
+    print(original_str + "\n")
