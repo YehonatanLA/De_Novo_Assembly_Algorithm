@@ -35,3 +35,4 @@ class InducedGraph(Graph):
             if edge is not max_edge and edge.next_vertex == max_edge.next_vertex:
                 return False
         return max_edge.weight >= real_read_len
+string = "aaabc"

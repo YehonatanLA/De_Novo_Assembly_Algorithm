@@ -1,5 +1,5 @@
 from Graph import *
-
+from Utilities import *
 
 # graph G star
 def get_overlap(suffix_vertex, prefix_vertex):
@@ -28,8 +28,15 @@ class AllOverlapsGraph(Graph):
         self.add_vertices()
 
     def add_vertices(self):
+        # first insert the suffixes in a hashes list, then for each vertex add the edges
+        prefix_hashes_list = create_prefix_hashes_lists(len(self.reads_lst))
         for vertex in self.reads_lst:
-            self.add_vertex(vertex)
+            insert_read_prefix_hashes(vertex, prefix_hashes_list)
+
+        for vertex in self.reads_lst:
+
+        #     self.add_vertex(vertex)
+
 
     def add_vertex(self, new_vertex):
         # TODO - after asking alex about optimized way to compare edges, change to that
