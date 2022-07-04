@@ -1,4 +1,4 @@
-from Utilities import *
+from DynamicProgramming import *
 from AllOverlapsGraph import *
 from InducedGraph import *
 from FinalDirectedGraph import *
@@ -33,13 +33,12 @@ def final_algorithm():
 
     # TODO:
     #       1. compare reads using hash
-    #       2. finish building the final directed graph
-    #       3. the horrible last part
+    #       2. the horrible last part
 
     print(original_str)
 
     # -----------------------------------------------------------------------
-    if original_str == final_directed.get_solution():
+    if original_str == create_guess(final_directed, len(original_str)):
         print("SUCCESS")
     else:
         print("MAYBE ANOTHER TIME")
