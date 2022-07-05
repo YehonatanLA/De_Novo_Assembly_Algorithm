@@ -13,11 +13,10 @@ class Graph:
 
 
 class Edge:
-    def __init__(self, weight, overlap, next_vertex):
+    def __init__(self, weight, next_vertex):
         self.weight = weight
-        # TODO: pretty sure we don't need overlap
-        self.overlap = overlap
         self.next_vertex = next_vertex
 
     def print_edge(self):
-        print(f"next vertex: {self.next_vertex}, weight of edge: {self.weight}, overlap of edge: {self.overlap}")
+        overlap = self.next_vertex[0:self.weight]  # !!!
+        print(f"next vertex: {self.next_vertex}, weight of edge: {self.weight}, overlap of edge: {overlap}")

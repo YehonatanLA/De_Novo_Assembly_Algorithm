@@ -1,7 +1,6 @@
 from Utilities import *
 
 class AllOverlapGraphOptimized:
-
     def __init__(self, reads, real_edge_len, read_size):
         self.reads = reads
         self.real_edge_len = real_edge_len
@@ -17,7 +16,7 @@ class AllOverlapGraphOptimized:
 
     def insert_read_to_table(self, prefix_hashes_list, read):
         hash_output = 0
-        for prefix_len in range(0, self.read_size):
+        for prefix_len in range(0, self.read_size - 1): # need to check
 
             # calculate hash
             curr_number = letter_to_base_four[read[prefix_len]]

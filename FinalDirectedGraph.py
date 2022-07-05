@@ -1,6 +1,5 @@
 from Graph import *
-from Utilities import is_real_overlap
-
+from Utilities import compare_prefix_suffix
 
 # graph G star star
 
@@ -82,8 +81,7 @@ class FinalDirectedGraph(Graph):
         for prefix_vertex in self.dict_graph.keys():
 
             for overlap_len in range(max_overlap_len - 1, 0, -1):
-
-                if is_real_overlap(prefix_vertex, suffix_vertex, overlap_len):
+                if compare_prefix_suffix(overlap_len, prefix_vertex, suffix_vertex):
                     edges_list.append(Edge(overlap_len, prefix_vertex[0:overlap_len], prefix_vertex))
                     break
         self.dict_graph[suffix_vertex] = edges_list
@@ -100,6 +98,3 @@ class FinalDirectedGraph(Graph):
         # all_edges_list will be a list that each item of index i is a list of all edges coming out of vertex i
         all_edges_list = [self.dict_graph[vertex] for vertex in self.dict_graph.keys()]
         guess = ""
-        
-
-

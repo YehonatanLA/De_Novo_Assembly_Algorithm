@@ -1,7 +1,8 @@
 from DynamicProgramming import *
-from AllOverlapsGraph import *
+# from AllOverlapsGraph import *
 from InducedGraph import *
 from FinalDirectedGraph import *
+from Utilities import *
 
 
 def final_algorithm():
@@ -38,7 +39,8 @@ def final_algorithm():
     print(original_str)
 
     # -----------------------------------------------------------------------
-    if original_str == create_guess(final_directed, len(original_str)):
+    possible_guesses = create_guess(final_directed, len(original_str))
+    if original_str in possible_guesses:
         print("SUCCESS")
     else:
         print("MAYBE ANOTHER TIME")
