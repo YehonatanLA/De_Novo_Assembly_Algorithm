@@ -40,7 +40,7 @@ def final_algorithm():
 
     # -----------------------------------------------------------------------
     possible_guesses = create_guess(final_directed, len(original_str))
-    if original_str in possible_guesses:
+    if possible_guesses is not None and original_str in possible_guesses:
         print("SUCCESS")
     else:
         print("MAYBE ANOTHER TIME")
