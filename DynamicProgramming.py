@@ -1,5 +1,4 @@
 from FinalDirectedGraph import *
-from Graph import *
 
 list_of_candidates = []
 
@@ -116,10 +115,10 @@ def backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_wei
 
     if len(curr_weights_list) == num_of_vertices - 1 and curr_column == 0:
         # successful edge set
-        list_of_candidates.append(curr_weights_list)
+        list_of_candidates.append(list(curr_weights_list))
         return
 
-    if curr_row == 1:
+    if curr_row == 0:
         # unsuccessful and made it to row 1
         return
 
@@ -127,8 +126,9 @@ def backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_wei
         # try with edge from vertex
         # need to copy list, so it won't change the pointer from another backtrack branch
         # after we add to list_of_candidates.
-        backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, list(curr_weights_list).insert(0, weight),
+        backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_weights_list.insert(0, weight),
                                           passed_zero, curr_row - 1, curr_column - weight)
+        del curr_weights_list[0]
 
     if passed_zero:
         # try without edge from vertex
