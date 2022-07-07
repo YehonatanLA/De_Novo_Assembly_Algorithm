@@ -99,7 +99,6 @@ def fill_overlap_matrix(final_overlap_graph: FinalDirectedGraph, overlaps_matrix
 def backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_weights_list, passed_zero,
                                       curr_row, curr_column):
     """
-
     :param overlaps_matrix: The matrix holding all the weights the backtracking function will go through
     :param num_of_vertices: The number of vertices
     :param curr_weights_list: In the current iteration of the backtracking, hold a list that has the current weights
@@ -126,9 +125,10 @@ def backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_wei
         # try with edge from vertex
         # need to copy list, so it won't change the pointer from another backtrack branch
         # after we add to list_of_candidates.
-        backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_weights_list.insert(0, weight),
-                                          passed_zero, curr_row - 1, curr_column - weight)
-        del curr_weights_list[0]
+        if weight > 0:
+            backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_weights_list.insert(0, weight),
+                                              passed_zero, curr_row - 1, curr_column - weight)
+            del curr_weights_list[0]
 
     if passed_zero:
         # try without edge from vertex
