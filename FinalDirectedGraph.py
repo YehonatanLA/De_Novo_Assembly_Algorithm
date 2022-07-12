@@ -82,8 +82,8 @@ class FinalDirectedGraph(Graph):
 
             for overlap_len in range(max_overlap_len - 1, 0, -1):
                 if compare_prefix_suffix(overlap_len, prefix_vertex, suffix_vertex):
-                    edges_list.append(Edge(overlap_len, prefix_vertex[0:overlap_len], prefix_vertex))
-                    break
+                    edges_list.append(Edge(overlap_len, prefix_vertex))
+                    # break
         self.dict_graph[suffix_vertex] = edges_list
 
     def create_guess(self):

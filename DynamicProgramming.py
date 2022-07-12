@@ -15,8 +15,12 @@ def create_guess(final_directed: FinalDirectedGraph, original_str_len):
     if final_directed.num_of_vertices == 1:
         for key in final_directed.dict_graph.keys():
             return key
+    vertices_list = []
 
-    candidate_edge_sets = find_candidate_edge_sets(final_directed, original_str_len)
+    for vertex in final_directed.dict_graph.keys():
+        vertices_list.append(vertex)
+
+    candidate_edge_sets = find_candidate_edge_sets(final_directed, original_str_len, vertices_list)
     if candidate_edge_sets is None:
         return None
     filtered_edge_sets = filter_edge_candidate_sets()
@@ -50,8 +54,8 @@ def fill_overlap_matrix(final_overlap_graph: FinalDirectedGraph, overlaps_matrix
         1. Set an order to the vertices
         2. For the first vertex in the order, for each edge out of it update matrix to matrix[1][edge.weight]
         3. For all other vertices in order, find every index from previous row that is not empty and put 0 in column of
-           index for current row. for each edge out of vertex, add (edge.weight + non-empty index) to set of weights
-           in cell matrix[vertex_num][edge.weight].
+           index for current row. for each edge out of vertex, add (edge.weight) to set of weights
+           in cell matrix[vertex_num][edge.weight + non-empty index].
     :param final_overlap_graph: The graph holding in the vertices parts of reconstructed string,
            and for edges holds the overlaps between two vertices (up to a certain length)
     :param overlaps_matrix: The matrix that will store edge weights
@@ -96,48 +100,57 @@ def fill_overlap_matrix(final_overlap_graph: FinalDirectedGraph, overlaps_matrix
     return overlaps_matrix
 
 
-def backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_weights_list, passed_zero,
-                                      curr_row, curr_column):
+def backtrack_all_candidate_edge_sets(overlaps_matrix, final_overlap_graph: FinalDirectedGraph, num_of_vertices,
+                                      curr_edges_list, passed_zero, curr_row, curr_column, vertices_list):
     """
+    :param vertices_list: a listing of the vertices which the edges will be based on
+           (vertex in index i will be represented by edge in index i in curr_edges_list)
+    :param final_overlap_graph: The graph holding in the vertices parts of reconstructed string,
+           and for edges holds the overlaps between two vertices (up to a certain length)
     :param overlaps_matrix: The matrix holding all the weights the backtracking function will go through
     :param num_of_vertices: The number of vertices
-    :param curr_weights_list: In the current iteration of the backtracking, hold a list that has the current weights
-    :param passed_zero: Boolean that represents if not taken an edge from vertex in one of previous rows.
+    :param curr_edges_list: In the current iteration of the backtracking, hold a list that has the current edges
+           in candidate solution
+    :param passed_zero: Boolean that represents if not taken an edge from vertex in one of previous rows
     :param curr_row: The current row of the backtracking
     :param curr_column: The current column of the backtracking
-    :return: Nothing
     """
     # TODO: currently, list_of_candidates is a global variable and this will ensure that adding a new set
     #  to the list will work in backtracking. However, I suspect that putting it as a local variable might also work
     #  since it is a pointer at the end of the day. So if you find that it will work with local,
     #  I suggest you change it.
 
-    if len(curr_weights_list) == num_of_vertices - 1 and curr_column == 0:
+    if len(curr_edges_list) == num_of_vertices - 1 and curr_column == 0:
         # successful edge set
-        list_of_candidates.append(list(curr_weights_list))
+        list_of_candidates.append(list(curr_edges_list))
         return
 
     if curr_row == 0:
         # unsuccessful and made it to row 1
         return
 
+    curr_vertex = vertices_list[curr_row]
+
     for weight in overlaps_matrix[curr_row][curr_column]:
         # try with edge from vertex
-        # need to copy list, so it won't change the pointer from another backtrack branch
-        # after we add to list_of_candidates.
         if weight > 0:
-            backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_weights_list.insert(0, weight),
-                                              passed_zero, curr_row - 1, curr_column - weight)
-            del curr_weights_list[0]
+            
+            for edge in final_overlap_graph.dict_graph[curr_vertex]:
+                if edge.weight == weight:
+                    backtrack_all_candidate_edge_sets(overlaps_matrix, final_overlap_graph, num_of_vertices,
+                                                      curr_edges_list.insert(0, edge), passed_zero, curr_row - 1,
+                                                      curr_column - weight, vertices_list)
+                    del curr_edges_list[0]
 
-    if passed_zero:
+    if not passed_zero:
         # try without edge from vertex
-        backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, curr_weights_list,
-                                          False, curr_row - 1, curr_column)
+        backtrack_all_candidate_edge_sets(overlaps_matrix, final_overlap_graph, num_of_vertices, curr_edges_list, True,
+                                          curr_row - 1, curr_column, vertices_list)
 
 
-def find_candidate_edge_sets(final_overlap_graph: FinalDirectedGraph, original_len):
+def find_candidate_edge_sets(final_overlap_graph: FinalDirectedGraph, original_len, vertices_list):
     """
+    :param vertices_list: The list of vertices indexed.
     :param final_overlap_graph: The graph holding in the vertices parts of reconstructed string,
            and for edges holds the overlaps between two vertices (up to a certain length).
     :param original_len: The length of the string that needs to be reconstructed.
@@ -149,15 +162,12 @@ def find_candidate_edge_sets(final_overlap_graph: FinalDirectedGraph, original_l
     # all_edges_list will be a list that each item of index i is a list of all edges coming out of vertex i
     num_of_vertices = final_overlap_graph.num_of_vertices
     overlaps_sum, overlaps_matrix = create_overlaps_mat(final_overlap_graph, num_of_vertices, original_len)
-    vertices_list = []
-
-    for vertex in final_overlap_graph.dict_graph.keys():
-        vertices_list.append(vertex)
 
     # TODO: will the overlap matrix be filled outside the function or do we need to assign the matrix again?
     overlaps_matrix = fill_overlap_matrix(final_overlap_graph, overlaps_matrix, vertices_list, overlaps_sum,
                                           num_of_vertices)
     if overlaps_matrix[num_of_vertices][overlaps_sum] is None:
         return None
-    backtrack_all_candidate_edge_sets(overlaps_matrix, num_of_vertices, [], False, num_of_vertices, overlaps_sum)
+    backtrack_all_candidate_edge_sets(overlaps_matrix, final_overlap_graph, num_of_vertices, [], False, num_of_vertices,
+                                      overlaps_sum, vertices_list)
     return list_of_candidates
