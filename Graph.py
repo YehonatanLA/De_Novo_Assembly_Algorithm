@@ -14,6 +14,7 @@ class Graph:
 
 class Edge:
     def __init__(self, weight, next_vertex):
+
         self.weight = weight
         self.next_vertex = next_vertex
 

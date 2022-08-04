@@ -39,7 +39,7 @@ def final_algorithm():
     print(original_str)
 
     # -----------------------------------------------------------------------
-    possible_guesses = create_guess(final_directed, len(original_str))
+    possible_guesses = create_guesses(final_directed, len(original_str))
     if possible_guesses is not None and original_str in possible_guesses:
         print("SUCCESS")
     else:
