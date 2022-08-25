@@ -1,43 +1,45 @@
 from Graph import *
 from Utilities import compare_prefix_suffix
 
+
 # graph G star star
 
 class FinalDirectedGraph(Graph):
 
-    def __init__(self, induced_graph):
+    def __init__(self, induced_graph, original_string):
         Graph.__init__(self)
         self.induced_graph = induced_graph
+        self.is_success = False
         # First part - Combine the vertices of I to single vertex
         roots = self.get_roots()
         self.num_of_vertices = len(roots)
-        max_overlap_len = len(roots[0])
+
+        if roots:
+            max_overlap_len = len(roots[0])
+        else:
+            # a very rare case
+            print("ERROR---CYCLIC")
+            exit(1)
 
         for root in roots:
             # change the old
-            path_to_vertex = self.compress_path(root, induced_graph)
-            self.dict_graph[path_to_vertex] = []
+            path_to_vertex = self.compress_path(root)
+            self.add_vertex_with_no_edges(path_to_vertex)
 
         for vertex in self.dict_graph.keys():
             self.add_edges(vertex, max_overlap_len)
 
-    # # ---------------------------------------
-    # self.solution = ""  # for testing
-    # # ---------------------------------------
-    #
-    # # first step for building the final directed graph
-    # for root in roots:
-    #     new_vertex = self.get_new_vertex_from_root(root)
-    #     self.dict_graph[new_vertex] = []
-    #
-    # if len(self.dict_graph.keys()) == 1:
-    #     [self.solution] = self.dict_graph.keys()
+        self.for_one_vertex_case(original_string)
 
-    # second step for building the final directed graph
     # TODO: second step
-
     # def get_solution(self):
     #     return self.solution
+
+    def for_one_vertex_case(self, original_string):
+        if self.get_number_of_vertices() == 1 and original_string in self.dict_graph:
+            self.is_success = True
+        else:
+            self.is_success = False
 
     def get_roots(self):
         roots = {vertex: True for vertex in self.induced_graph.dict_graph.keys()}
@@ -46,55 +48,53 @@ class FinalDirectedGraph(Graph):
                 roots[edge.next_vertex] = False
         return [vertex for vertex, status in roots.items() if status]
 
-    def compress_path(self, root, induced_graph):
-        """
-        :param root: the vertex which holds the path that will be compressed
-        :param induced_graph: the induced graph with some
-        :return: the compressed vertex
-        """
-        """
-        Way this function operates: for each vertex in path, we put in the string from index 0 until overlap starts
-        """
-        vertex_length = len(root)
-        inner_edge = induced_graph[root]
-        new_vertex = ""
-        curr_vertex = root
+    def compress_path(self, root):
+        index = 0
 
-        while inner_edge is not None:
-            join_tuple = (new_vertex, curr_vertex[:vertex_length - inner_edge.weight])
+        new_vertex = root
+
+        [edge] = self.induced_graph.dict_graph[root]
+        vertex = edge.next_vertex
+
+        while vertex in self.induced_graph.dict_graph:
+            join_tuple = (new_vertex, edge.next_vertex[edge.weight:])
             new_vertex = "".join(join_tuple)
-            curr_vertex = inner_edge.next_vertex
-            inner_edge = induced_graph[curr_vertex]
-        """
-        Need to add the final vertex from path to string, since it doesn't have an edge
-        """
-        new_vertex = "".join((new_vertex, curr_vertex))
+
+            [edge] = self.induced_graph.dict_graph[vertex]
+            vertex = edge.next_vertex
+
+            index += 1
+            if index > self.induced_graph.get_number_of_vertices():
+                # a very rare case
+                print("ERROR---CYCLIC")
+                return ""
+
+        join_tuple = (new_vertex, edge.next_vertex[edge.weight:])
+        new_vertex = "".join(join_tuple)
         return new_vertex
 
     def add_edges(self, suffix_vertex, max_overlap_len):
         """
+        :param max_overlap_len:
         :param suffix_vertex: the vertex to add edges from
-        :return: nothing
         """
-        edges_list = []
-        # TODO: doing this the naive way, if there is a better than optimize here
         for prefix_vertex in self.dict_graph.keys():
-
+            if id(prefix_vertex) == id(suffix_vertex):
+                continue
             for overlap_len in range(max_overlap_len - 1, 0, -1):
                 if compare_prefix_suffix(overlap_len, prefix_vertex, suffix_vertex):
-                    edges_list.append(Edge(overlap_len, prefix_vertex))
-                    # break
-        self.dict_graph[suffix_vertex] = edges_list
+                    edge = Edge(overlap_len, prefix_vertex)
+                    self.add_edge(suffix_vertex, edge)
 
-    def create_guess(self):
-        """
-        The function will use G** to create a guess of reconstructed string
-        :return: the guess if there is one, empty string otherwise
-        """
-
-        if self.num_of_vertices == 1:
-            return self.dict_graph.keys()[0]
-
-        # all_edges_list will be a list that each item of index i is a list of all edges coming out of vertex i
-        all_edges_list = [self.dict_graph[vertex] for vertex in self.dict_graph.keys()]
-        guess = ""
+    # def create_guess(self):
+    #     """
+    #     The function will use G** to create a guess of reconstructed string
+    #     :return: the guess if there is one, empty string otherwise
+    #     """
+    #
+    #     if self.num_of_vertices == 1:
+    #         return self.dict_graph.keys()[0]
+    #
+    #     # all_edges_list will be a list that each item of index i is a list of all edges coming out of vertex i
+    #     all_edges_list = [self.dict_graph[vertex] for vertex in self.dict_graph.keys()]
+    #     guess = ""
