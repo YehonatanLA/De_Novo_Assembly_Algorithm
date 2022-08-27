@@ -1,6 +1,7 @@
 from Utilities import *
 from Graph import *
 
+
 # I know the name is confusing
 class AllOverlapGraphOptimizedBYAlex:
 
@@ -124,3 +125,7 @@ class AllOverlapGraphOptimizedBYAlex:
                             self.last_prefix_hash[j] = NO_HASH
                             self.last_suffix_hash[i] = NO_HASH
                         break
+        # finally, add all the remaining vertices that weren't added so far:
+        for vertex in self.reads_lst:
+            if vertex not in graph.dict_graph.keys():
+                graph.add_vertex_with_no_edges(vertex)

@@ -53,14 +53,16 @@ class FinalDirectedGraph(Graph):
 
         new_vertex = root
 
-        [edge] = self.induced_graph.dict_graph[root]
-        vertex = edge.next_vertex
+        # [edge] = self.induced_graph.dict_graph[root]
+        # vertex = edge.next_vertex
+        vertex = root
 
-        while vertex in self.induced_graph.dict_graph:
+        # while vertex in self.induced_graph.dict_graph:
+        while self.induced_graph.dict_graph[vertex]:
+            [edge] = self.induced_graph.dict_graph[vertex]
             join_tuple = (new_vertex, edge.next_vertex[edge.weight:])
             new_vertex = "".join(join_tuple)
 
-            [edge] = self.induced_graph.dict_graph[vertex]
             vertex = edge.next_vertex
 
             index += 1
@@ -69,8 +71,8 @@ class FinalDirectedGraph(Graph):
                 print("ERROR---CYCLIC")
                 return ""
 
-        join_tuple = (new_vertex, edge.next_vertex[edge.weight:])
-        new_vertex = "".join(join_tuple)
+        # join_tuple = (new_vertex, edge.next_vertex[edge.weight:])
+        # new_vertex = "".join(join_tuple)
         return new_vertex
 
     def add_edges(self, suffix_vertex, max_overlap_len):
