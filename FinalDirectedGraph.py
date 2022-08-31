@@ -10,7 +10,6 @@ class FinalDirectedGraph(Graph):
         Graph.__init__(self)
         self.induced_graph = induced_graph
         self.is_success = False
-        # First part - Combine the vertices of I to single vertex
         roots = self.get_roots()
         self.num_of_vertices = len(roots)
 
@@ -31,10 +30,6 @@ class FinalDirectedGraph(Graph):
 
         self.for_one_vertex_case(original_string)
 
-    # TODO: second step
-    # def get_solution(self):
-    #     return self.solution
-
     def for_one_vertex_case(self, original_string):
         if self.get_number_of_vertices() == 1 and original_string in self.dict_graph:
             self.is_success = True
@@ -50,14 +45,9 @@ class FinalDirectedGraph(Graph):
 
     def compress_path(self, root):
         index = 0
-
         new_vertex = root
-
-        # [edge] = self.induced_graph.dict_graph[root]
-        # vertex = edge.next_vertex
         vertex = root
 
-        # while vertex in self.induced_graph.dict_graph:
         while self.induced_graph.dict_graph[vertex]:
             [edge] = self.induced_graph.dict_graph[vertex]
             join_tuple = (new_vertex, edge.next_vertex[edge.weight:])
@@ -71,8 +61,6 @@ class FinalDirectedGraph(Graph):
                 print("ERROR---CYCLIC")
                 return ""
 
-        # join_tuple = (new_vertex, edge.next_vertex[edge.weight:])
-        # new_vertex = "".join(join_tuple)
         return new_vertex
 
     def add_edges(self, suffix_vertex, max_overlap_len):
@@ -87,16 +75,3 @@ class FinalDirectedGraph(Graph):
                 if compare_prefix_suffix(overlap_len, prefix_vertex, suffix_vertex):
                     edge = Edge(overlap_len, prefix_vertex)
                     self.add_edge(suffix_vertex, edge)
-
-    # def create_guess(self):
-    #     """
-    #     The function will use G** to create a guess of reconstructed string
-    #     :return: the guess if there is one, empty string otherwise
-    #     """
-    #
-    #     if self.num_of_vertices == 1:
-    #         return self.dict_graph.keys()[0]
-    #
-    #     # all_edges_list will be a list that each item of index i is a list of all edges coming out of vertex i
-    #     all_edges_list = [self.dict_graph[vertex] for vertex in self.dict_graph.keys()]
-    #     guess = ""
