@@ -1,5 +1,7 @@
 import math
+import random
 import textwrap
+from generate_reads import generate_strand
 
 
 def classify_sections(strand, sections_amount, frequency, classifications, padding):
@@ -15,11 +17,10 @@ def classify_sections(strand, sections_amount, frequency, classifications, paddi
     :param padding: The padding to put between every section
     :param strand: the original strand without classification
     :param sections_amount: how many sections to divide the strand
-    :param read_size: how big will the read_size be
     :param frequency: how often to insert classifications of section in data
     :return: The new strand with both ways of meta-data included
     """
-    # TODO: need to optimize for uneven division of sections_amount by strand length, last section will be shorter
+    # TODO: adapt for uneven division of sections_amount by strand length, last section will be shorter
     sections_list = textwrap.wrap(strand, width=int(math.ceil(len(strand) / sections_amount)), break_long_words=True)
 
     for section_num in range(0, sections_amount):
@@ -36,39 +37,40 @@ def classify_sections(strand, sections_amount, frequency, classifications, paddi
     return "".join(sections_list)
 
 
-def input_test_data():
-    file_path_strand = input("Enter file path to strand:\n")
-    file_path_classifications = input("Enter file path to classifications:\n")
-    file_path_padding = input("Enter file path to padding:\n")
-    file_path_sections = input("Enter file path to section amount:\n")
-    file_path_read_size = input("Enter file path to read size:\n")
-    file_path_frequency = input("Enter file path to frequency:\n")
-    # the classifications for the tests we need is down below, but to be generic for different classifications I'll
-    # put an option for input from files
-    # classifications = ["AA", "AC", "AG", "AT", "CA", "CC", "CG", "CT", "GA", "GC", "GG", "GT", "TA", "TC", "TG", "TT"]
+def generate_reads2(strand, num_of_reads, num_of_sections, read_len, strand_section_len_before, letters_amount, freq):
+    dict_reads = dict()
 
-    file_strand = open(file_path_strand, "r")
-    strand = file_strand.read().strip()
-    file_classifications = open(file_path_classifications, "r")
-    classifications = file_classifications.read().strip()
-    file_padding = open(file_path_padding, "r")
-    padding = file_padding.read().strip()
-    file_sections = open(file_path_sections, "r")
-    sections_amount = int(file_sections.read().strip())
-    file_read_size = open(file_path_read_size, "r")
-    read_size = int(file_read_size.read().strip())
-    file_frequency = open(file_path_frequency, "r")
-    frequency = int(file_frequency.read().strip())
-    return strand, classifications, padding, sections_amount, read_size, frequency
+    section_length = strand_section_len_before + strand_section_len_before * letters_amount / freq \
+                     + read_len + letters_amount
+    padding_starts = [int(i) for j in range(1, num_of_sections) for i in
+                      range(int(j * section_length - read_len), int(j * section_length))]
+
+    for _ in range(num_of_reads):
+        start_index = random.randint(0, len(strand) - read_len)
+        read = strand[start_index:start_index + read_len]
+        section = math.floor(start_index / section_length)
+        if start_index in padding_starts:
+            section += 1
+        dict_reads[read] = section
+
+    return dict_reads
 
 
 def main():
-    # you can change the inputs to fit from one file, or have multiple datas from same file
-    # (for instance 5 different frequencies for different tests) you can change the code slightly for it in minutes.
-    strand, classifications, padding, sections_amount, read_size, frequency = input_test_data()
+    strand_len = 150000
+    letters = ['A', 'C', 'G', 'T']
+    strand = generate_strand(letters, strand_len)
+    # print("Before:")
+    # print(strand)
+
+    # classifications = ["AC", "AG", "AT", "CA", "CC", "CG", "CT", "GA", "GC", "GG", "GT", "TA", "TC", "TG", "TT"]
+    classifications = ["AT"]
+    padding = "A" * 19 + "G" + "A" * 110 + "G" + "A" * 19
+    sections_amount = 15
+    frequency = 10
     new_strand = classify_sections(strand, sections_amount, frequency, classifications, padding)
-    # TODO: create function that saves the hash of 100 first letters of every section and stores it in a file
-    print(new_strand)
+    # print("After:")
+    # print(new_strand)
 
 
 if __name__ == "__main__":
