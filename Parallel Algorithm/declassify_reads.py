@@ -1,19 +1,14 @@
 import time
-from enum import Enum
 from classify_strand_sections import *
+from Utilities import Position
 
 FIND_REPETITION_TIME = 0
 FIND_PADDING_AUX_TIME = 0
 CLASSIFY_READ_OTHER = 0
 
 
-class Position(Enum):
-    START = 0
-    END = 1
-
-
 def find_repetitive_letters(read, letters_amount, frequency):
-    for i in range(0, frequency + 2):
+    for i in range(0, frequency + letters_amount):
         candidate = read[i: i + letters_amount]
         was_repetitive = True
 
@@ -79,6 +74,9 @@ def find_padding(read, freq, g_freq):
         padding_position = Position.END
         padding_len, found_g = find_padding_aux(read, freq, len(read) - 1, -1, -1, g_freq)
 
+    if padding_len < freq:
+        padding_position = Position.NONE
+
     return padding_position, padding_len, found_g
 
 
@@ -86,23 +84,22 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
     # TODO: maybe throw bad reads (mainly  padding) at reading reads phase
     # check if the read is just padding or padding with up to two letters of classification
     if read == padding:
-        return -1
+        return -1, None
     for letters in letters_to_section.keys():
         if read == padding[letters_amount:] + letters or read == letters + padding[0:-letters_amount]:
-            return -1
+            return -1, None
 
-    # if not success or candidate_letters == "AA":
-    is_padding_start, padding_len, found_g = find_padding(read, frequency, g_freq)
+    padding_position, padding_len, found_g = find_padding(read, frequency, g_freq)
 
     if padding_len > g_freq and found_g:
 
-        if is_padding_start == Position.START:
+        if padding_position == Position.START:
             candidate_letters = read[padding_len: padding_len + letters_amount]
         else:
             candidate_letters = read[-padding_len - letters_amount: -padding_len]
 
-    elif g_freq > padding_len > frequency or padding_len > g_freq and not found_g:
-        if is_padding_start == Position.START:
+    elif g_freq > padding_len >= frequency or padding_len > g_freq and not found_g:
+        if padding_position == Position.START:
             candidate_letters = find_repetitive_letters(read[padding_len - letters_amount:], letters_amount,
                                                         frequency)
         else:
@@ -112,31 +109,37 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
         candidate_letters = find_repetitive_letters(read, letters_amount, frequency)
 
     if len(candidate_letters) < letters_amount:
-        return -1
-    return letters_to_section[candidate_letters]
+        return -1, None
+    return letters_to_section[candidate_letters], [padding_position]
 
 
 def declassify_reads(reads: list, num_of_sections, letters_amount, frequency, g_freq, classifications, padding):
     reads_by_sections = [[] for _ in range(num_of_sections)]
+    padding_positions_by_sections = [[] for _ in range(num_of_sections)]
     letters_to_section = {classifications[i]: i for i in range(0, len(classifications))}
 
     for read in reads:
         try:
-            section = declassify_read(read, letters_amount, frequency, g_freq, letters_to_section, padding)
+            section, padding_position = declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
+                                                        padding)
 
             if section != -1:
                 reads_by_sections[section].append(read)
+                padding_positions_by_sections[section].append(padding_position[0])
         except KeyError:
             print(read)
     # adding the reads with a lot of padding: the first and last add one, other sections add two
     reads_by_sections[0].append(classifications[0] + padding[0:-letters_amount])
+    padding_positions_by_sections[0].append(Position.END)
     reads_by_sections[-1].append(padding[letters_amount:] + classifications[-1])
+    padding_positions_by_sections[-1].append(Position.START)
 
-    for i in range(1, len(classifications) - 1):
+    for i in range(1, num_of_sections):
         reads_by_sections[i].append(padding[letters_amount:] + classifications[i])
-        # reads_by_sections[i].append(classifications[i] + padding[0:-letters_amount * 2] + classifications[(i + 1)])
-        reads_by_sections[i].append(classifications[i] + padding[0:-letters_amount * 2] + "C" * letters_amount)
-    return reads_by_sections
+        padding_positions_by_sections[i].append(Position.START)
+        reads_by_sections[i].append(classifications[i] + padding[0:-letters_amount])
+        padding_positions_by_sections[i].append(Position.END)
+    return reads_by_sections, padding_positions_by_sections
 
 
 def test_section(section_len):

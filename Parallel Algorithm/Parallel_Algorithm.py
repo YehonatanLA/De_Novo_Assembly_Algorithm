@@ -1,16 +1,18 @@
 import time
 from multiprocessing import Process, Manager
 from main import final_algorithm
-
+from Utilities import get_section_size, create_padding
 from generate_reads import generate_strand, generate_reads
 from classify_strand_sections import classify_sections
 from declassify_reads import declassify_reads
 
 
-def run_section_algorithm(section_reads_lst: list, section_len, read_size, real_edge_length,
+def run_section_algorithm(section_reads_lst: list, padding_positions, section_len, read_size,
+                          real_edge_length,
                           complete_sections_dict, section):
-    candidate_results = final_algorithm(section_len, read_size, real_edge_length, section_reads_lst)
-    if type(candidate_results) is None or  len(candidate_results) != 1:
+    candidate_results = final_algorithm(section_len, read_size, real_edge_length, section_reads_lst,
+                                        padding_positions)
+    if type(candidate_results) is None or len(candidate_results) != 1:
         # TODO: maybe figure out a way to solve cases like this?
         print("Algorithm failed - exiting...")
         exit(1)
@@ -18,9 +20,12 @@ def run_section_algorithm(section_reads_lst: list, section_len, read_size, real_
         complete_sections_dict[section] = candidate_results[0]
 
 
-def run_parallel_algorithm(reads_lst, read_size, real_edge_length, special_sections_length, letters_amount):
+def run_parallel_algorithm(reads_lst, padding_positions_by_sections, read_size, real_edge_length,
+                           special_sections_length, letters_amount):
     """
 
+    :param padding_positions_by_sections: A list of sections, in each item has a list of padding position
+           (weather starting at beginning of read, end of read or has no padding)
     :param reads_lst: Each item of the list is a list of reads that is classified by a section
     :param read_size: The size of a read
     :param real_edge_length: A parameter for the original algorithm
@@ -37,7 +42,6 @@ def run_parallel_algorithm(reads_lst, read_size, real_edge_length, special_secti
     complete_sections = []
 
     for section in range(section_amount):
-        # for section in range(2, 3):
         if 0 < section < section_amount - 1:
             section_len = special_sections_length + read_size - letters_amount
 
@@ -45,8 +49,9 @@ def run_parallel_algorithm(reads_lst, read_size, real_edge_length, special_secti
             section_len = special_sections_length
 
         p = Process(target=run_section_algorithm,
-                    args=(reads_lst[section], int(section_len), read_size, real_edge_length, shared_dict,
-                          section))
+                    args=(
+                        reads_lst[section], padding_positions_by_sections[section], int(section_len), read_size,
+                        real_edge_length, shared_dict, section))
         processes.append(p)
         p.start()
 
@@ -67,57 +72,51 @@ def main():
                 'CAA', 'CAC', 'CAG', 'CAT', 'CCA', 'CCC', 'CCG', 'CCT', 'CGA', 'CGC', 'CGG', 'CGT', 'CTA', 'CTC', 'CTG',
                 'CTT', 'GAA', 'GAC', 'GAG', 'GAT', 'GCA', 'GCC', 'GCG', 'GCT', 'GGA', 'GGC', 'GGG', 'GGT', 'GTA', 'GTC',
                 'GTG', 'GTT', 'TAA', 'TAC', 'TAG']
-    sections = 50
-    read_size = 200
+    sections = 5
     letters_amount = 3
     real_edge_length = 20
     frequency = 15
-    strand_len = 1000000
+    strand_len = 75000
     g_freq = 25
+    read_size = 200
     time_of_all_tests = 0
-    padding = "A" * (g_freq - 1) + "G" + "A" * (read_size - 2 * g_freq) + "G" + "A" * (g_freq - 1)
+    padding = create_padding(read_size, g_freq)
     strand_section_len_before = strand_len / sections
-    special_section_length = int(strand_section_len_before + int(strand_section_len_before * letters_amount / frequency) \
-                                 + read_size + letters_amount)
-    for i in range(test_num):
-        print(f"Starting test {i}")
-        generate_strand_start = time.time()
-        strand_before = generate_strand(letters, strand_len)
-        generate_strand_time = time.time() - generate_strand_start
-        print("Generated strand")
-        classify_sections_start = time.time()
-        strand = classify_sections(strand_before, sections, frequency, classify, padding)
-        classify_sections_time = time.time() - classify_sections_start
-        print(f"strand length: {len(strand)}")
-        print("Classified strand")
-        generate_reads_start = time.time()
-        dict_reads = generate_reads(strand, len(strand), read_size)
-        generate_reads_time = time.time() - generate_reads_start
-        print(f"Generated reads. There are {len(dict_reads)} reads.")
-        declassify_reads_start = time.time()
-        reads_by_sections = declassify_reads(dict_reads, sections, letters_amount, frequency, g_freq, classify, padding)
-        declassify_reads_time = time.time() - declassify_reads_start
-        print("Declassified reads")
-        run_parallel_algorithm_start = time.time()
-        complete_sections = run_parallel_algorithm(reads_by_sections, read_size, real_edge_length, special_section_length,
-                                                   letters_amount)
-        run_parallel_algorithm_time = time.time() - run_parallel_algorithm_start
-        sum_time = declassify_reads_time + run_parallel_algorithm_time
-        time_of_all_tests += sum_time
-        print("finished parallel algorithm")
+    special_section_length = get_section_size(strand_section_len_before, frequency, read_size, letters_amount)
 
-        if len(complete_sections) != sections:
-            print(f"In test {i}, not all sections produced string!")
-        else:
-            print(f"In test {i}, there were {sections} strings from the algorithm!")
-        print(
-            f"Time to declassify reads: {declassify_reads_time}. percent of all time: "
-            f"{(declassify_reads_time / sum_time) * 100}")
-        print(
-            f"Time to run parallel algorithm: {run_parallel_algorithm_time}. percent of all time: "
-            f"{(run_parallel_algorithm_time / sum_time) * 100}")
-        print(f"Time it took for the whole thing: {sum_time}")
-    print(f"Average time it took to complete algorithm: {time_of_all_tests / test_num}")
+    generate_strand_start = time.time()
+    strand_before = generate_strand(letters, strand_len)
+    generate_strand_time = time.time() - generate_strand_start
+    print("Generated strand")
+    classify_sections_start = time.time()
+    strand = classify_sections(strand_before, sections, frequency, classify, padding)
+    classify_sections_time = time.time() - classify_sections_start
+    print(f"strand length: {len(strand)}")
+    print("Classified strand")
+    generate_reads_start = time.time()
+    dict_reads = generate_reads(strand, len(strand), read_size)
+    generate_reads_time = time.time() - generate_reads_start
+    print(f"Generated reads. There are {len(dict_reads)} reads.")
+    declassify_reads_start = time.time()
+    reads_by_sections, padding_positions_by_sections = \
+        declassify_reads(dict_reads, sections, letters_amount, frequency, g_freq, classify, padding)
+    declassify_reads_time = time.time() - declassify_reads_start
+    print("Declassified reads")
+    run_parallel_algorithm_start = time.time()
+    complete_sections = run_parallel_algorithm(reads_by_sections, padding_positions_by_sections, read_size,
+                                               real_edge_length, special_section_length,
+                                               letters_amount)
+    run_parallel_algorithm_time = time.time() - run_parallel_algorithm_start
+    sum_time = declassify_reads_time + run_parallel_algorithm_time
+    time_of_all_tests += sum_time
+    print("finished parallel algorithm")
+    print(
+        f"Time to declassify reads: {declassify_reads_time}. percent of all time: "
+        f"{(declassify_reads_time / sum_time) * 100}")
+    print(
+        f"Time to run parallel algorithm: {run_parallel_algorithm_time}. percent of all time: "
+        f"{(run_parallel_algorithm_time / sum_time) * 100}")
+    print(f"Time it took for the whole thing: {sum_time}")
 
     # generate_non_time = time.time()
     # reads_non_parallel = generate_reads(strand_before, len(strand_before), read_size)

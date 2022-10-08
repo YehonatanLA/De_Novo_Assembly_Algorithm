@@ -43,7 +43,7 @@ def generate_reads2(strand, num_of_reads, num_of_sections, read_len, strand_sect
     section_length = strand_section_len_before + strand_section_len_before * letters_amount / freq \
                      + read_len + letters_amount
     padding_starts = [int(i) for j in range(1, num_of_sections) for i in
-                      range(int(j * section_length - read_len), int(j * section_length))]
+                      range(int(j * section_length - read_len + 1), int(j * section_length))]
 
     for _ in range(num_of_reads):
         start_index = random.randint(0, len(strand) - read_len)

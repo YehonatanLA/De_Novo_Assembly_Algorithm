@@ -82,7 +82,7 @@ def generate_strand(letters, strand_length):
             strand_parts.append(str(strand))
             strand = ""
         strand = "".join([strand, new_letter])
-    return "".join(strand_parts)
+    return "".join(strand_parts) + strand
 
 
 def generate_reads(strand, strand_length, read_size):
