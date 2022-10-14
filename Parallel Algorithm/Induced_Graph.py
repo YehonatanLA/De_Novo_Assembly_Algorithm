@@ -5,7 +5,7 @@ from Graph import *
 # I know the name is confusing
 class AllOverlapGraphOptimizedByAlex:
 
-    def __init__(self, read_size, real_edge_size, reads_lst, padding_positions=None):
+    def __init__(self, read_size, real_edge_size, reads_lst, padding_positions):
         self.four_inverse = find_four_inverse()
         self.four_pow = create_convert_list(read_size)
         self.reads_lst = reads_lst
@@ -51,15 +51,14 @@ class AllOverlapGraphOptimizedByAlex:
                 self.hash_of_indexes[suffix_hash] = []
 
             for j in self.hash_of_indexes[suffix_hash]:
-                if self.padding_positions is not None and self.padding_positions[i] == Position.END and \
-                        self.padding_positions[j] == Position.START:
-                    continue
-
-                if j == i:
-                    continue
-
                 prefix = self.reads_lst[j][:self.read_size - 1]
                 suffix = self.reads_lst[i][1:]
+                # There could be false matches of padding read from end of section as prefix,
+                # and a padding read from the start of the section as suffix. This is to check the match
+                if (self.reads_lst[j] in self.padding_positions[0] and self.reads_lst[i] in self.padding_positions[
+                        1]) or i == j:
+                    continue
+
                 if prefix == suffix:
                     edge = Edge(self.read_size - 1, self.reads_lst[j])
 
@@ -100,7 +99,6 @@ class AllOverlapGraphOptimizedByAlex:
                 # calculate hash of suffixes
                 if self.last_suffix_hash[i] == NO_HASH:
                     continue
-
                 read = self.reads_lst[i]
                 prev_hash = self.last_suffix_hash[i]
                 hash_output = discarded_MSL_hash(read, self.read_size - match_len, match_len, prev_hash, self.four_pow)
@@ -114,16 +112,14 @@ class AllOverlapGraphOptimizedByAlex:
 
                 # check for matches
                 for j in self.hash_of_indexes[hash_output]:
-
-                    if self.padding_positions is not None and self.padding_positions[i] == Position.END and \
-                            self.padding_positions[j] == Position.START:
-                        continue
-
-                    if j == i:
-                        continue
-
                     prefix = self.reads_lst[j][:match_len]
                     suffix = self.reads_lst[i][self.read_size - match_len:]
+
+                    # There could be false matches of padding read from end of section as prefix,
+                    # and a padding read from the start of the section as suffix. This is to check the match
+                    if (self.reads_lst[j] in self.padding_positions[0] and self.reads_lst[i] in self.padding_positions[
+                            1]) or i == j:
+                        continue
 
                     if suffix == prefix:
                         edge = Edge(match_len, self.reads_lst[j])

@@ -9,7 +9,6 @@ class FinalDirectedGraph(Graph):
     def __init__(self, induced_graph):
         Graph.__init__(self)
         self.induced_graph = induced_graph
-        classifications = ["AC", "AG", "AT", "CA", "CC", "CG", "CT", "GA", "GC", "GG", "GT", "TA", "TC", "TG", "TT"]
         # self.is_success = False
         roots = self.get_roots()
         self.num_of_vertices = len(roots)
@@ -29,12 +28,6 @@ class FinalDirectedGraph(Graph):
         for vertex in self.dict_graph.keys():
             self.add_edges(vertex, max_overlap_len)
 
-    # def for_one_vertex_case(self, original_string):
-    #     if self.get_number_of_vertices() == 1 and original_string in self.dict_graph:
-    #         self.is_success = True
-    #     else:
-    #         self.is_success = False
-
     def get_roots(self):
         roots = {vertex: True for vertex in self.induced_graph.dict_graph.keys()}
         for vertex, list_of_edges in self.induced_graph.dict_graph.items():
@@ -46,6 +39,8 @@ class FinalDirectedGraph(Graph):
         index = 0
         new_vertex = root
         vertex = root
+        # TODO: a cycle was made because we didn't check that a vertex was used again, and the algorithm
+        #       didn't fail. Maybe we should check this?
 
         while self.induced_graph.dict_graph[vertex]:
             [edge] = self.induced_graph.dict_graph[vertex]

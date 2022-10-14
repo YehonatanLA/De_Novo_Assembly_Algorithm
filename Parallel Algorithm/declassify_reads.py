@@ -1,10 +1,13 @@
 import time
 from classify_strand_sections import *
 from Utilities import Position
+from generate_reads import generate_strand, generate_reads
+
 
 FIND_REPETITION_TIME = 0
 FIND_PADDING_AUX_TIME = 0
 CLASSIFY_READ_OTHER = 0
+PADDING_WINDOWS = 0
 
 
 def find_repetitive_letters(read, letters_amount, frequency):
@@ -83,6 +86,7 @@ def find_padding(read, freq, g_freq):
 def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section, padding):
     # TODO: maybe throw bad reads (mainly  padding) at reading reads phase
     # check if the read is just padding or padding with up to two letters of classification
+    global PADDING_WINDOWS
     if read == padding:
         return -1, None
     for letters in letters_to_section.keys():
@@ -92,6 +96,7 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
     padding_position, padding_len, found_g = find_padding(read, frequency, g_freq)
 
     if padding_len > g_freq and found_g:
+        PADDING_WINDOWS += 1
 
         if padding_position == Position.START:
             candidate_letters = read[padding_len: padding_len + letters_amount]
@@ -99,6 +104,8 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
             candidate_letters = read[-padding_len - letters_amount: -padding_len]
 
     elif g_freq > padding_len >= frequency or padding_len > g_freq and not found_g:
+        PADDING_WINDOWS += 1
+
         if padding_position == Position.START:
             candidate_letters = find_repetitive_letters(read[padding_len - letters_amount:], letters_amount,
                                                         frequency)
@@ -107,6 +114,7 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
                                                         letters_amount, frequency)
     else:
         candidate_letters = find_repetitive_letters(read, letters_amount, frequency)
+        padding_position = Position.NONE
 
     if len(candidate_letters) < letters_amount:
         return -1, None
@@ -114,8 +122,10 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
 
 
 def declassify_reads(reads: list, num_of_sections, letters_amount, frequency, g_freq, classifications, padding):
+    global PADDING_WINDOWS
     reads_by_sections = [[] for _ in range(num_of_sections)]
-    padding_positions_by_sections = [[] for _ in range(num_of_sections)]
+    # TODO: saw that finding set is much faster than "in" for a list, maybe change
+    paddings_by_sections = [[[], []] for _ in range(num_of_sections)]
     letters_to_section = {classifications[i]: i for i in range(0, len(classifications))}
 
     for read in reads:
@@ -124,34 +134,47 @@ def declassify_reads(reads: list, num_of_sections, letters_amount, frequency, g_
                                                         padding)
 
             if section != -1:
+                if padding_position[0] == Position.START:
+                    paddings_by_sections[section][0].append(read)
+                elif padding_position[0] == Position.END:
+                    paddings_by_sections[section][1].append(read)
                 reads_by_sections[section].append(read)
-                padding_positions_by_sections[section].append(padding_position[0])
+
         except KeyError:
             print(read)
     # adding the reads with a lot of padding: the first and last add one, other sections add two
     reads_by_sections[0].append(classifications[0] + padding[0:-letters_amount])
-    padding_positions_by_sections[0].append(Position.END)
+    paddings_by_sections[0][1].append(classifications[0] + padding[0:-letters_amount])
     reads_by_sections[-1].append(padding[letters_amount:] + classifications[-1])
-    padding_positions_by_sections[-1].append(Position.START)
+    paddings_by_sections[-1][0].append(padding[letters_amount:] + classifications[-1])
 
-    for i in range(1, num_of_sections):
+    for i in range(1, num_of_sections - 1):
+        paddings_by_sections[i][0].append(padding[letters_amount:] + classifications[i])
         reads_by_sections[i].append(padding[letters_amount:] + classifications[i])
-        padding_positions_by_sections[i].append(Position.START)
+        paddings_by_sections[i][1].append(classifications[i] + padding[0:-letters_amount])
         reads_by_sections[i].append(classifications[i] + padding[0:-letters_amount])
-        padding_positions_by_sections[i].append(Position.END)
-    return reads_by_sections, padding_positions_by_sections
+    print(f"num of padding reads: {PADDING_WINDOWS}")
+    return reads_by_sections, paddings_by_sections
 
 
-def test_section(section_len):
-    strand_len = 300000
+def test_section():
+    strand_len = 5000
+    read_size = 150
     letters = ['A', 'C', 'G', 'T']
-    strand = generate_strand(letters, strand_len)
-    classify = ["AC", "AG", "AT", "CA", "CC", "CG", "CT", "GA", "GC", "GG", "GT", "TA", "TC", "TG", "TT"]
-    padding = "A" * 19 + "G" + "A" * 78 + "G" + "A" * 19
-    strand = classify_sections(strand, 15, 10, classify, padding)
-    for freq in range(0, len(strand), 12):
-        print(strand[freq: freq + 12])
-    return find_repetitive_letters(strand[section_len + 1 + 150:section_len + 150 + 1 + section_len], 2, 10)
+    strand_before = generate_strand(letters, strand_len)
+    classify = ["AC", "AG", "AT"]
+    padding = "A" * 19 + "G" + "A" * 110 + "G" + "A" * 19
+    strand = classify_sections(strand_before, 3, 10, classify, padding)
+    print(f"strand length: {len(strand)}")
+    reads = generate_reads(strand, len(strand), read_size)
+    reads_by_sections, paddings_by_sections = declassify_reads(reads, 3, 2, 10, 20, classify, padding)
+    # print(reads_by_sections)
+    for section_paddings in paddings_by_sections:
+        print("section change!")
+        print(section_paddings[0])
+        print(section_paddings[1])
+
+
 
 
 def main():
