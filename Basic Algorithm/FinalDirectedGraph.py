@@ -18,7 +18,6 @@ class FinalDirectedGraph(Graph):
         else:
             # a very rare case
             print("ERROR---CYCLIC")
-            exit(1)
 
         for root in roots:
             # change the old
@@ -63,11 +62,9 @@ class FinalDirectedGraph(Graph):
 
         return new_vertex
 
+    # add all possible edges
     def add_edges(self, suffix_vertex, max_overlap_len):
-        """
-        :param max_overlap_len:
-        :param suffix_vertex: the vertex to add edges from
-        """
+
         for prefix_vertex in self.dict_graph.keys():
             if id(prefix_vertex) == id(suffix_vertex):
                 continue

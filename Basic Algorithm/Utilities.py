@@ -7,55 +7,6 @@ BASE_NUM = 4
 letter_to_base_four = {'A': 0, 'C': 1, 'G': 2, 'T': 3}
 NO_HASH = -1
 
-
-def generate_string(str_len):
-    letters = [key for key in letter_to_base_four.keys()]
-    return ''.join(random.choice(letters) for _ in range(str_len))
-
-
-def read_random_input(original_str, str_len, window_size, num_of_reads):
-    lst_of_all_reads = []
-    index = 0
-
-    while index < num_of_reads:
-        start_index = random.randint(0, str_len - window_size)
-        sub_strand = original_str[start_index: start_index + window_size]
-        if sub_strand not in lst_of_all_reads:
-            lst_of_all_reads.append(sub_strand)
-            index += 1
-    return lst_of_all_reads
-
-
-def read_random_input_improve(original_str, str_len, window_size, num_of_reads):
-    reads_left = [i for i in range(0, str_len - window_size + 1)]
-    lst_of_all_reads = []
-    index = 0
-    while index < num_of_reads:
-        print(index)
-        pseudo_start_index = random.randint(0, len(reads_left) - 1)
-        start_index = reads_left[pseudo_start_index]
-        sub_strand = original_str[start_index: start_index + window_size]
-        lst_of_all_reads.append(sub_strand)
-        reads_left.remove(start_index)
-        index += 1
-    return lst_of_all_reads
-
-
-def read_random_input_improve2(original_str, str_len, window_size, num_of_reads):
-    reads_left = [i for i in range(0, str_len - window_size + 1)]
-    lst_of_all_reads = []
-    index = 0
-    while index < num_of_reads:
-        start_index = random.choice(reads_left)
-        sub_strand = original_str[start_index: start_index + window_size]
-        lst_of_all_reads.append(sub_strand)
-        reads_left.remove(start_index)
-        index += 1
-        if index % 10000 == 0:
-            print(index)
-    return lst_of_all_reads
-
-
 def create_convert_list(read_size):
     convert_array = [1] * read_size
     for i in range(1, read_size):
@@ -72,26 +23,6 @@ def compare_prefix_suffix(prefix_suffix_len, read_prefix, read_suffix):
 
 def find_four_inverse():
     return pow(BASE_NUM, -1, BIG_PRIME)
-
-
-def get_current_time(current_time):
-    print(f"time: {time.time() - current_time}\n")
-
-
-def print_start_msg(original_str):
-    print("----------------------------------------------------")
-    print("De Novo Assembly Algorithm\n")
-    print("Original Strand: ")
-    print(original_str + "\n")
-    print("----------------------------------------------------")
-
-
-def print_success_or_failure(is_success):
-    if is_success:
-        print("SUCCESS")
-    else:
-        print("FAILURE")
-
 
 def full_hash(read, pos, length):
     hash_output = 0
@@ -117,9 +48,9 @@ def discarded_LSL_hash(read, pos, length, prev_hash, four_inv):
     curr = (prev_hash - letter_to_base_four[read[pos + length]]) % BIG_PRIME
     return (curr * four_inv) % BIG_PRIME
 
-
-def get_length_of_longest_prefix_suffix(read):
-    n = len(read)
+# the function returns the length of prefix that also a suffix in read
+def get_length_of_longest_prefix_suffix(read, match_len):
+    n = match_len
     if n == 0:
         return 0
     end_suffix = n - 1
@@ -134,3 +65,10 @@ def get_length_of_longest_prefix_suffix(read):
             end_suffix -= 1
             end_prefix -= 1
     return n - end_suffix - 1
+
+
+def compare_reads(prefix, suffix, suffix_start, len_match):
+    for i in range(len_match):
+        if prefix[i] != suffix[suffix_start + i]:
+            return False
+    return True

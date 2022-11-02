@@ -3,7 +3,6 @@ from FinalDirectedGraph import *
 
 list_of_candidates = []
 
-
 # overall main function of dynamic programming part
 
 
@@ -77,7 +76,6 @@ def find_candidate_edge_sets(final_overlap_graph: FinalDirectedGraph, original_l
 
 def create_overlaps_mat(final_overlap_graph: FinalDirectedGraph, num_of_vertices, original_len):
     """
-    :
     :param final_overlap_graph: A graph holding in the vertices parts of reconstructed string,
            and for edges holds the overlaps between two vertices
     :param num_of_vertices: The number of vertices that final_overlap_graph has.
@@ -223,7 +221,6 @@ def backtrack_all_candidate_edge_sets(overlaps_matrix, final_overlap_graph: Fina
 
 def filter_edge_candidate_sets(candidate_edge_sets: List[List[Edge]], vertex_to_index):
     """
-    :
     :param candidate_edge_sets: A list of candidate edges, representing the possible path of vertices
     :param vertex_to_index: A mapping of vertices to indexes based on their position in vertices_list
     :return: All edge sets that have a root, for all vertices in_degree(vertex) <= 1, and no cycles in path

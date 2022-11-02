@@ -1,13 +1,15 @@
+
+
 from Utilities import *
 from Graph import *
 
 
-# I know the name is confusing
-class AllOverlapGraphOptimizedBYAlex:
+class InducedGraphAux:
 
+    # store all the relevant data for building the induced graph
     def __init__(self, read_size, real_edge_size, reads_lst):
-        self.four_inverse = find_four_inverse()
-        self.four_pow = create_convert_list(read_size)
+        self.four_inverse = find_four_inverse() # (4^(-1)) % P
+        self.four_pow = create_convert_list(read_size) # [1,4,16,64,....,] each element (mod P)
         self.reads_lst = reads_lst
         self.read_size = read_size
         self.real_edge_size = real_edge_size
@@ -20,9 +22,22 @@ class AllOverlapGraphOptimizedBYAlex:
     # the function which builds the Induced graph
     def build_induced_graph_from_data(self):
         graph = Graph()
+        first_step_time = time.time()
         self.insert_full_hash()
+        first_step_time = time.time() - first_step_time
+        print(f"first step time is {first_step_time}")
+        second_step_time = time.time()
         self.second_step(graph)
+        second_step_time = time.time() - second_step_time
+        print(f"second step time is {second_step_time}")
+        third_step_time = time.time()
         self.third_step(graph)
+        third_step_time = time.time() - third_step_time
+        print(f"third step time is {third_step_time}")
+        sum_time = first_step_time + second_step_time + third_step_time
+        print(
+            f"The first part is about {first_step_time * 100 / sum_time}%\nThe second part is about"
+            f" {second_step_time * 100 / sum_time}%\nThe third part is about {third_step_time * 100 / sum_time}%")
         return graph
 
     # first step in algorithm
@@ -50,16 +65,18 @@ class AllOverlapGraphOptimizedBYAlex:
                 self.hash_of_indexes[suffix_hash] = []
 
             for j in self.hash_of_indexes[suffix_hash]:
-                prefix = self.reads_lst[j][:self.read_size - 1]
-                suffix = self.reads_lst[i][1:]
-                if prefix == suffix:
+
+                # prefix = self.reads_lst[j][:self.read_size - 1]
+                # suffix = self.reads_lst[i][1:]
+                if compare_reads(self.reads_lst[j], self.reads_lst[i], 1, self.read_size - 1):
                     edge = Edge(self.read_size - 1, self.reads_lst[j])
 
                     graph.add_edge(self.reads_lst[i], edge)
 
+                    prefix = self.reads_lst[j][:self.read_size - 1]
                     self.hash_of_indexes[suffix_hash].remove(j)
 
-                    if get_length_of_longest_prefix_suffix(prefix) >= self.threshold_value:
+                    if get_length_of_longest_prefix_suffix(prefix, self.read_size - 1) >= self.threshold_value:
                         if len(graph.dict_graph[self.reads_lst[i]]) == 1:
                             del graph.dict_graph[self.reads_lst[i]]
                         else:
@@ -106,17 +123,18 @@ class AllOverlapGraphOptimizedBYAlex:
 
                 # check for matches
                 for j in self.hash_of_indexes[hash_output]:
-                    prefix = self.reads_lst[j][:match_len]
-                    suffix = self.reads_lst[i][self.read_size - match_len:]
+                    # prefix = self.reads_lst[j][:match_len]
+                    # suffix = self.reads_lst[i][self.read_size - match_len:]
 
-                    if suffix == prefix:
+                    if compare_reads(self.reads_lst[j], self.reads_lst[i], self.read_size - match_len, match_len):
                         edge = Edge(match_len, self.reads_lst[j])
 
                         graph.add_edge(self.reads_lst[i], edge)
 
                         self.hash_of_indexes[hash_output].remove(j)
+                        prefix = self.reads_lst[j][:match_len]
 
-                        if get_length_of_longest_prefix_suffix(prefix) >= self.threshold_value:
+                        if get_length_of_longest_prefix_suffix(prefix, match_len) >= self.threshold_value:
                             if len(graph.dict_graph[self.reads_lst[i]]) == 1:
                                 del graph.dict_graph[self.reads_lst[i]]
                             else:
