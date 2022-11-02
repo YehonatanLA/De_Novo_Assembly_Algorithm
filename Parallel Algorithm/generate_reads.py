@@ -1,5 +1,6 @@
+import random
 import math
-from main import *
+from Alex_Algorithm import *
 
 REAL_LENGTH = 20
 NUM_OF_TESTS = 1000
@@ -69,8 +70,6 @@ def create_regular_tests(letters, length):
     stat_file.write("average read amount:\n")
     stat_file.write(f"{reads_num / tests}\n")
     stat_file.close()
-    sum_time = 0
-    reads_num = 0
 
 
 def generate_strand(letters, strand_length):

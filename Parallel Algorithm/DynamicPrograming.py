@@ -4,8 +4,6 @@ from FinalDirectedGraph import *
 list_of_candidates = []
 
 
-# overall main function of dynamic programming part
-
 
 def create_guesses(final_directed: FinalDirectedGraph, original_str_len):
     global list_of_candidates

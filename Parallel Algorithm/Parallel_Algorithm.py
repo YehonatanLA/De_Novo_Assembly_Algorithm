@@ -1,6 +1,6 @@
 import time
 from multiprocessing import Process, Manager
-from main import final_algorithm
+from Alex_Algorithm import alex_algorithm
 from Utilities import get_section_size, create_padding
 from generate_reads import generate_strand, generate_reads
 from classify_strand_sections import classify_sections
@@ -12,10 +12,9 @@ from remove_classifications import remove_meta_data
 def run_section_algorithm(section_reads_lst: list, paddings_positions, section_len, read_size,
                           real_edge_length,
                           complete_sections_dict, section):
-    candidate_results = final_algorithm(section_len, read_size, real_edge_length, section_reads_lst,
-                                        paddings_positions)
+    candidate_results = alex_algorithm(section_len, read_size, real_edge_length, section_reads_lst,
+                                       paddings_positions)
     if candidate_results is None or len(candidate_results) != 1:
-        # TODO: maybe figure out a way to solve cases like this?
         print("Algorithm failed - exiting...")
         exit(1)
     else:
@@ -25,7 +24,6 @@ def run_section_algorithm(section_reads_lst: list, paddings_positions, section_l
 def run_parallel_algorithm(reads_lst, paddings_by_sections, read_size, real_edge_length,
                            special_sections_length, letters_amount):
     """
-
     :param paddings_by_sections: A list of sections, in each item has a list of padding position
            (weather starting at beginning of read, end of read or has no padding)
     :param reads_lst: Each item of the list is a list of reads that is classified by a section
@@ -65,6 +63,25 @@ def run_parallel_algorithm(reads_lst, paddings_by_sections, read_size, real_edge
     return complete_sections
 
 
+def final_algorithm(sections_num, letters_amount, classify, real_edge_len, frequency, strand_len, g_freq, read_size,
+                    read_lst):
+    # declassify each read by its section
+    padding = create_padding(read_size, g_freq)
+    reads_by_sections, paddings_by_sections = declassify_reads(read_lst, sections_num, letters_amount, frequency,
+                                                               g_freq, classify, padding)
+
+    # run for each section Alex's algorithm
+    strand_section_len_before = strand_len / sections_num
+    special_section_length = get_section_size(strand_section_len_before, frequency, read_size, letters_amount)
+    complete_sections = run_parallel_algorithm(reads_by_sections, paddings_by_sections, read_size,
+                                               real_edge_len, special_section_length,
+                                               letters_amount)
+    # remove meta data from the solution
+    strand_rebuilt = remove_meta_data(sections_num, complete_sections, frequency, letters_amount, read_size, strand_len)
+
+    return strand_rebuilt
+
+
 def main():
     test_num = 10
     letters = ['A', 'C', 'G', 'T']
@@ -78,7 +95,7 @@ def main():
     letters_amount = 3
     real_edge_length = 25
     frequency = 15
-    strand_len = 150000
+    strand_len = 500000
     g_freq = 25
     read_size = 200
     time_of_all_tests = 0
@@ -141,7 +158,3 @@ def main():
     #     f"Time to generate reads: {generate_reads_time}. percent of all time: {(generate_reads_time / sum_time) * 100}")
 
     # print(f"\nTime to run non parallel algorithm: {run_non_parallel_time}.")
-
-
-if __name__ == "__main__":
-    main()

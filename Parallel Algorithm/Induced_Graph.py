@@ -2,12 +2,12 @@ from Utilities import *
 from Graph import *
 
 
-# I know the name is confusing
-class AllOverlapGraphOptimizedByAlex:
+class Induced_Graph_Aux:
 
+    # store all the relevant data for building the induced graph
     def __init__(self, read_size, real_edge_size, reads_lst, padding_positions):
-        self.four_inverse = find_four_inverse()
-        self.four_pow = create_convert_list(read_size)
+        self.four_inverse = find_four_inverse()  # (4^(-1)) % P
+        self.four_pow = create_convert_list(read_size)  # [1,4,16,64,....,] each element (mod P)
         self.reads_lst = reads_lst
         self.read_size = read_size
         self.real_edge_size = real_edge_size

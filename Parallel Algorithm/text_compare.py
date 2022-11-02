@@ -7,7 +7,7 @@ def compare_strings(original, created):
             print(f"The strand is {original[i - 10: i + 10]}")
             print(f"The created is {original[i - 10: i + 10]}")
             diff = True
-            # break
+            break
 
     if not diff:
         print("Strings are identical!")

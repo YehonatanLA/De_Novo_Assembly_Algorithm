@@ -39,8 +39,6 @@ class FinalDirectedGraph(Graph):
         index = 0
         new_vertex = root
         vertex = root
-        # TODO: a cycle was made because we didn't check that a vertex was used again, and the algorithm
-        #       didn't fail. Maybe we should check this?
 
         while self.induced_graph.dict_graph[vertex]:
             [edge] = self.induced_graph.dict_graph[vertex]
