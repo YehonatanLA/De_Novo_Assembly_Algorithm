@@ -1,9 +1,18 @@
+# from Parallel_Algorithm_Lib.Utilities import Position
+# from Parallel_Algorithm_Lib.Utilities import Position
+from Parallel_Algorithm_Lib.classify_strand_sections import classify_strand
 from Utilities import Position
+from Tests import Utilities_Test as ut
+import random
 
 
-def find_repetitive_letters(read, letters_amount, frequency):
+def find_repetitive_letters(read, letters_amount, frequency, bad_read, classifications):
     for i in range(0, frequency + letters_amount):
         candidate = read[i: i + letters_amount]
+        if candidate not in classifications:
+            continue
+        if candidate == bad_read:
+            continue
         was_repetitive = True
 
         for j in range(i + frequency + letters_amount, len(read), frequency + letters_amount):
@@ -28,7 +37,6 @@ def find_padding_aux(read, freq, starting_index, final_index, jump, g_freq):
     If so, add 1 to counter and go to next letter.
     If there is a 'G', make sure it's part of the padding and if not, break.
     Otherwise, break.
-
     :param read: the read to be searched for padding
     :param freq: how often the classification letters appear in the strand
     :param starting_index: the index the function is starting to look for padding from
@@ -38,7 +46,6 @@ def find_padding_aux(read, freq, starting_index, final_index, jump, g_freq):
     :return: The function returns the true padding length inside the read
     if the padding is over g_freq + classification_letters_len,
     almost accurate padding otherwise
-
     """
     padding_len = 0
     found_g = False
@@ -47,19 +54,21 @@ def find_padding_aux(read, freq, starting_index, final_index, jump, g_freq):
     last_padding_g_pos = None
 
     for pos in range(starting_index, final_index, jump):
+        if found_g:
+            # found g exactly freq letters ago
+            if counter_from_g == g_freq:  # changed
+                last_padding_g_pos = pos - g_freq * jump
+                padding_len += g_freq
+                found_g = False
+                padding_has_g = True
+            # g was found less than freq letters ago
+            elif read[pos] == "A":
+                counter_from_g += 1
+                continue
+            else:
+                break
         if read[pos] == "A":
             # found g in one of freq letters ago
-            if found_g:
-                # found g exactly freq letters ago
-                if counter_from_g == freq:
-                    last_padding_g_pos = pos - freq * jump
-                    padding_len += freq + 1
-                    found_g = False
-                    padding_has_g = True
-                # g was found less than freq letters ago
-                else:
-                    counter_from_g += 1
-                    continue
             padding_len += 1
 
         elif read[pos] == "G":
@@ -72,21 +81,29 @@ def find_padding_aux(read, freq, starting_index, final_index, jump, g_freq):
         # either C or T were found, break automatically
         else:
             break
-
     if last_padding_g_pos is not None:
         padding_len = len(read[starting_index:last_padding_g_pos:jump]) + g_freq
     return padding_len, padding_has_g
 
 
 def find_padding(read, freq, g_freq):
-    padding_position = Position.START
     # start from beginning
-    padding_len, found_g = find_padding_aux(read, freq, 0, len(read), 1, g_freq)
+    padding_len_start, found_g_start = find_padding_aux(read, freq, 0, len(read), 1, g_freq)
 
-    if padding_len < freq:
-        # start from end
+    # if padding_len < freq:
+    # start from end
+    padding_len_end, found_g_end = find_padding_aux(read, freq, len(read) - 1, -1, -1, g_freq)
+
+    if padding_len_end > padding_len_start:
+        padding_len = padding_len_end
+        found_g = found_g_end
         padding_position = Position.END
-        padding_len, found_g = find_padding_aux(read, freq, len(read) - 1, -1, -1, g_freq)
+
+
+    else:
+        padding_len = padding_len_start
+        found_g = found_g_start
+        padding_position = Position.START
 
     if padding_len < freq:
         padding_position = Position.NONE
@@ -94,15 +111,15 @@ def find_padding(read, freq, g_freq):
     return padding_position, padding_len, found_g
 
 
-def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section, padding):
+def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section, padding, bad_read, classifications):
     # too close to a full padding read, can't be used for declassification
     if read == padding:
         return -1, None
-    for letters in letters_to_section.keys():
-        if read == padding[letters_amount:] + letters or read == letters + padding[0:-letters_amount]:
-            return -1, None
 
     padding_position, padding_len, found_g = find_padding(read, frequency, g_freq)
+
+    if padding_len >= len(padding) - letters_amount:
+        return -1, None
 
     # can accurately tell how much padding and that padding has g
     if padding_len > g_freq and found_g:
@@ -118,13 +135,13 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
 
         if padding_position == Position.START:
             candidate_letters = find_repetitive_letters(read[padding_len - letters_amount:], letters_amount,
-                                                        frequency)
+                                                        frequency, bad_read, classifications)
         else:
             candidate_letters = find_repetitive_letters(read[0:len(read) + letters_amount - padding_len],
-                                                        letters_amount, frequency)
+                                                        letters_amount, frequency, bad_read, classifications)
     # no padding
     else:
-        candidate_letters = find_repetitive_letters(read, letters_amount, frequency)
+        candidate_letters = find_repetitive_letters(read, letters_amount, frequency, bad_read, classifications)
         padding_position = Position.NONE
 
     if len(candidate_letters) < letters_amount:
@@ -133,6 +150,7 @@ def declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
 
 
 def declassify_reads(reads: list, num_of_sections, letters_amount, frequency, g_freq, classifications, padding):
+    bad_read = 'A' * letters_amount
     reads_by_sections = [[] for _ in range(num_of_sections)]
     paddings_by_sections = [[[], []] for _ in range(num_of_sections)]
     letters_to_section = {classifications[i]: i for i in range(0, len(classifications))}
@@ -140,7 +158,7 @@ def declassify_reads(reads: list, num_of_sections, letters_amount, frequency, g_
     for read in reads:
         try:
             section, padding_position = declassify_read(read, letters_amount, frequency, g_freq, letters_to_section,
-                                                        padding)
+                                                        padding, bad_read, classifications)
 
             if section != -1:
                 if padding_position[0] == Position.START:
@@ -150,16 +168,133 @@ def declassify_reads(reads: list, num_of_sections, letters_amount, frequency, g_
                 reads_by_sections[section].append(read)
 
         except KeyError:
+            print(reads.index(read))
             print(read)
     # adding reads with a lot of padding: the first and last add one, other sections add two
-    reads_by_sections[0].append(classifications[0] + padding[0:-letters_amount])
-    paddings_by_sections[0][1].append(classifications[0] + padding[0:-letters_amount])
-    reads_by_sections[-1].append(padding[letters_amount:] + classifications[-1])
-    paddings_by_sections[-1][0].append(padding[letters_amount:] + classifications[-1])
 
-    for i in range(1, num_of_sections - 1):
-        paddings_by_sections[i][0].append(padding[letters_amount:] + classifications[i])
-        reads_by_sections[i].append(padding[letters_amount:] + classifications[i])
-        paddings_by_sections[i][1].append(classifications[i] + padding[0:-letters_amount])
-        reads_by_sections[i].append(classifications[i] + padding[0:-letters_amount])
+    # reads_by_sections[0].append(classifications[0] + padding[0:-letters_amount])
+    # paddings_by_sections[0][1].append(classifications[0] + padding[0:-letters_amount])
+    # reads_by_sections[-1].append(padding[letters_amount:] + classifications[-1])
+    # paddings_by_sections[-1][0].append(padding[letters_amount:] + classifications[-1])
+    #
+    # for i in range(1, num_of_sections - 1):
+    #     paddings_by_sections[i][0].append(padding[letters_amount:] + classifications[i])
+    #     reads_by_sections[i].append(padding[letters_amount:] + classifications[i])
+    #     paddings_by_sections[i][1].append(classifications[i] + padding[0:-letters_amount])
+    #     reads_by_sections[i].append(classifications[i] + padding[0:-letters_amount])
     return reads_by_sections, paddings_by_sections
+
+
+def main():
+    # read = "TCAAATAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAA"
+    #
+    # letters_amount = 4
+    # frequency = 15
+    # read_size = 200
+    # g_freq = 30
+    # bad_read = letters_amount * "A"
+    # classifications = ut.create_classification(10, letters_amount)
+    # letters_to_section = {classifications[i]: i for i in range(0, len(classifications))}
+    # print(declassify_read(read, letters_amount, frequency, g_freq, letters_to_section, padding, bad_read,
+    #                       classifications))
+    st = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
+    section_amount = 10
+    letters_amount = 4
+    frequency = 15
+    read_size = 200
+    g_freq = 30
+    strand_length = 500000
+    padding = (g_freq - 1) * "A" + "G" + (read_size - g_freq * 2) * "A" + "G" + (g_freq - 1) * "A"
+    # padding = (g_freq - 1) * "A" + "G" + (read_size - g_freq * 2) * "A" + "G" + (g_freq - 1) * "A"
+    print(st == padding)
+    classifications = ut.create_classification(section_amount, letters_amount)
+    print(classifications)
+    strand = ut.generate_strand(strand_length)
+    classified_strand = classify_strand(strand, section_amount, frequency, classifications, g_freq, read_size)
+    # print(strand)
+    dict_reads = generate_reads_2(classified_strand, read_size, strand_length, section_amount, frequency,
+                                  letters_amount)
+    reads_lst = []
+    for read in dict_reads.keys():
+        reads_lst.append(read)
+    reads_by_sections, padding_by_sections = declassify_reads(reads_lst, section_amount, letters_amount, frequency,
+                                                              g_freq, classifications, padding)
+    i = 0
+    num_of_errors = 0
+    for section in reads_by_sections:
+        for read in section:
+            if dict_reads[read] != i:
+                num_of_errors += 1
+                print("Mismatch:")
+                print(f"read: {read}")
+                print(f"we declassified as section {i}")
+                print(f"the test showed section {dict_reads[read]}\n")
+        i += 1
+    print(f"errors: {num_of_errors}")
+
+
+letters = ['A', 'C', 'G', 'T']
+
+
+def generate_reads_(meta_data_strand, num_of_reads, read_size, strand_no_meta_data_len, section_amount, freq,
+                    letters_amount):
+    """
+    :param meta_data_strand: strand with the mata data
+    :param strand_no_meta_data_len: the len of the original strand with no meta-data
+    :return: dict:  key is a read, value is a section
+    """
+    dict_reads = dict()
+    g = int(((strand_no_meta_data_len / section_amount) * (1 + (letters_amount / freq))) + letters_amount)
+    section_indexes = [[] for _ in range(section_amount)]
+    section_indexes[0] = (0, g - letters_amount)
+    for i in range(1, section_amount):
+        element = section_indexes[i - 1]
+        new_tup = (element[1] + letters_amount * 2, element[1] + g + read_size)
+        section_indexes[i] = new_tup
+
+    for _ in range(num_of_reads):
+        start_index = random.randint(0, len(meta_data_strand) - read_size)
+        read = meta_data_strand[start_index:start_index + read_size]
+        section = -1
+        for i in range(section_amount):
+            if start_index >= section_indexes[i][0] and start_index <= section_indexes[i][1]:
+                section = i
+        if section != -1:
+            dict_reads[read] = section
+    return dict_reads
+
+
+# generate all the possible reads, the amount of reads is (length_meta_data_strand - read size)
+def generate_reads_2(meta_data_strand, read_size, strand_no_meta_data_len, section_amount, freq,
+                     letters_amount):
+    """
+    :param meta_data_strand: strand with the mata data
+    :param strand_no_meta_data_len: the len of the original strand with no meta data
+    :return: dict:  key is a read, value is a section
+    """
+    dict_reads = dict()
+    g = int(((strand_no_meta_data_len / section_amount) * (1 + (letters_amount / freq))) + letters_amount)
+    section_indexes = [[] for _ in range(section_amount)]
+    section_indexes[0] = (0, g - letters_amount)
+    for i in range(1, section_amount):
+        element = section_indexes[i - 1]
+        new_tup = (element[1] + 2 * letters_amount, element[1] + g + read_size)
+        section_indexes[i] = new_tup
+
+    for j in range(len(meta_data_strand) - read_size + 1):
+        start_index = j
+        read = meta_data_strand[start_index:start_index + read_size]
+        section = -1
+        for i in range(section_amount):
+            cond1 = start_index >= section_indexes[i][0]
+            cond2 = start_index <= section_indexes[i][1]
+            if cond1 and cond2:
+                section = i
+        if section != -1:
+            dict_reads[read] = section
+    return dict_reads
+
+
+if __name__ == '__main__':
+    main()
